@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethel Design | Mustufa Portfolio</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Three.js for 3D background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Define a custom configuration for Tailwind */
+        :root {
+            --glow-color: 0, 192, 255; /* Light blue/cyan glow */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #E0F2F1; /* Light cyan text for contrast */
+            /* Ensure the content is always on top of the canvas */
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Custom text glow effect using text-shadow */
+        .text-glow {
+            text-shadow: 
+                0 0 4px rgba(var(--glow-color), 0.6),
+                0 0 8px rgba(var(--glow-color), 0.4),
+                0 0 12px rgba(var(--glow-color), 0.2);
+            filter: brightness(1.2);
+        }
+
+        /* Container for the 3D canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0; /* Behind everything else */
+            background-color: #030712; /* Darkest charcoal/black background */
+        }
+
+        /* Style the main CTA button for a futuristic look */
+        .cta-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(var(--glow-color), 0.7);
+            border: 2px solid rgba(var(--glow-color), 0.5);
+        }
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(var(--glow-color), 1), 0 0 40px rgba(var(--glow-color), 0.5);
+            background-color: rgba(var(--glow-color), 0.1);
+        }
+
+        /* Ensures the main content is fully visible */
+        .main-content {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            transition: all 1s ease; /* For initial load fade */
+        }
+
+        /* Responsive padding and text size */
+        @media (min-width: 768px) {
+            .hero-text {
+                font-size: 4rem; /* Larger text on desktop */
+            }
+        }
+        @media (max-width: 767px) {
+            .hero-text {
+                font-size: 2.5rem; /* Smaller text on mobile */
+            }
+        }
+
+        /* --- Custom Animation Classes for Staggered Load --- */
+
+        /* Initial state: Invisible and slightly moved up */
+        .animated-item {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            /* Using a fixed transition duration, relying on data-delay for stagger */
+        }
+
+        /* Target state: Fully visible and in place */
+        .loaded .animated-item {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Mute Button Styling */
+        #mute-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 50; /* Above all content */
+            background: rgba(0, 192, 255, 0.1); /* Slightly visible background */
+            border: 1px solid rgba(0, 192, 255, 0.3);
+            color: rgb(224, 242, 241); /* Text color from body */
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.3s;
+        }
+        #mute-toggle:hover {
+            background: rgba(0, 192, 255, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(var(--glow-color), 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Background Audio Element -->
+    <!-- Music file: golden brown ending part looped (slowed _ reverb).mp3 -->
+    <!-- FIXED: Changed the ID back to 'bg-music' to match the JavaScript query -->
+    <audio id="golden brown ending part looped (slowed _ reverb).mp3" loop autoplay muted>
+        <source src="http://googleusercontent.com/file_content/1" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- 2. Mute/Unmute Control Button -->
+    <button id="mute-toggle" aria-label="Toggle Mute">
+        <!-- Initially shows the MUTE icon (because audio starts muted) -->
+        <div id="speaker-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M13.5 4.06c0-1.336-1.636-2.007-2.577-1.285L5.498 7.5H3.75a2.25 2.25 0 00-2.25 2.25v4.5c0 1.24.969 2.25 2.16 2.25h1.748l5.425 4.72c.94.723 2.576.052 2.576-1.285V4.06zM17.25 9a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5H18a.75.75 0 01-.75-.75zM17.25 14.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5H18a.75.75 0 01-.75-.75zM22.5 12a.75.75 0 00-.75-.75h-1.5a.75.75 0 000 1.5h1.5a.75.75 0 00.75-.75z"/></svg>
+        </div>
+    </button>
+
+
+    <!-- 3. 3D Canvas Container - This is where three.js renders -->
+    <div id="bg-canvas"></div>
+
+    <!-- 4. Main Content Layer -->
+    <div id="main-content" class="main-content flex flex-col items-center justify-center p-6 md:p-12 text-center">
+
+        <!-- Header / Main Title (Delay 1) -->
+        <header class="mb-8 animated-item" style="transition-delay: 100ms;">
+            <h1 class="hero-text text-6xl md:text-8xl font-extrabold tracking-tight text-white text-glow mb-4 rounded-lg px-4 py-2">
+                Aethel Design
+            </h1>
+            <p class="text-2xl md:text-3xl font-light text-cyan-300">
+                Graphics Designer & Video Editor
+            </p>
+        </header>
+
+        <!-- About Section (Delay 2) -->
+        <section class="max-w-xl mx-auto mb-10 p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-cyan-500/20 shadow-xl animated-item" style="transition-delay: 300ms;">
+            <h2 class="text-3xl font-semibold mb-4 text-glow text-white">About Mustufa</h2>
+            <p class="text-lg text-gray-200 leading-relaxed">
+                <b>Hello! I'm Mustufa</b>, a passionate and dedicated <b>visual creator</b>. At just <b>16 years old</b>, <b>I specialize in crafting engaging graphics and dynamic video edits</b>. I thrive on transforming concepts into high-impact visual stories, always pushing for fresh aesthetics and professional-grade results. Let's build something exceptional together.
+            </p>
+        </section>
+
+        <!-- Call to Action Button (Delay 3) -->
+        <a href="https://www.instagram.com/musteex112/" target="_blank" class="cta-button inline-block px-8 py-4 mb-10 text-xl font-bold bg-cyan-700/30 text-white rounded-full uppercase tracking-wider transition duration-300 animated-item" style="transition-delay: 500ms;">
+            Start Your Own Project
+        </a>
+
+        <!-- Contact Information (Delay 4) -->
+        <section class="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-cyan-500/20 animated-item" style="transition-delay: 700ms;">
+            <h3 class="text-xl font-semibold mb-3 text-glow text-white">Get in Touch</h3>
+            <div class="space-y-2 text-md">
+                <p class="text-gray-300">
+                    <span class="font-medium text-cyan-300 mr-2">Email:</span> 
+                    <a href="mailto:mustafaincidius@gmail.com" class="hover:text-cyan-400 transition duration-150">mustafaincidius@gmail.com</a>
+                </p>
+                <p class="text-gray-300">
+                    <span class="font-medium text-cyan-300 mr-2">Phone:</span> 
+                    <a href="tel:03351271603" class="hover:text-cyan-400 transition duration-150">03351271603</a>
+                </p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- JavaScript for 3D Background, Responsiveness, and Audio Control -->
+    <script>
+        // THREE.js Particle System Setup
+        let scene, camera, renderer, particles, particleCount;
+
+        function initThreeJS() {
+            const container = document.getElementById('bg-canvas');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // 1. Scene
+            scene = new THREE.Scene();
+
+            // 2. Camera
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.z = 100;
+
+            // 3. Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+
+            // 4. Create Particles
+            particleCount = 500;
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color();
+
+            for (let i = 0; i < particleCount; i++) {
+                // Random position within a cube of size 400
+                positions.push(THREE.MathUtils.randFloatSpread(400)); // x
+                positions.push(THREE.MathUtils.randFloatSpread(400)); // y
+                positions.push(THREE.MathUtils.randFloatSpread(400)); // z
+
+                // Set particle color (light cyan with variance)
+                const r = 0.5 + (Math.random() * 0.5); 
+                const g = 0.8 + (Math.random() * 0.2); 
+                const b = 0.9 + (Math.random() * 0.1); 
+                color.setRGB(r, g, b);
+                colors.push(color.r, color.g, color.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            // Particle Material
+            const material = new THREE.PointsMaterial({
+                size: 1.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending, // Gives a glow effect
+                sizeAttenuation: true
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+        }
+
+        // Animation Loop - IMPROVED for visibility
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Make rotation slightly faster and add Z rotation
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.001;
+            particles.rotation.z += 0.0002;
+
+            // Subtle camera movement to enhance 3D effect
+            const time = Date.now() * 0.00005;
+            camera.position.x = Math.cos(time) * 10;
+            camera.position.y = Math.sin(time) * 10;
+            camera.lookAt(scene.position); // Keep camera focused on the center
+
+            renderer.render(scene, camera);
+        }
+        
+        // --- Audio Control Logic ---
+        function setupAudioControl() {
+            // FIX: music element is now correctly retrieved as its ID was fixed in HTML
+            const music = document.getElementById('bg-music');
+            const toggleButton = document.getElementById('mute-toggle');
+            const iconContainer = document.getElementById('speaker-icon');
+
+            // Check if essential elements exist before proceeding
+            if (!music || !toggleButton || !iconContainer) {
+                console.error("Audio control elements not found. Cannot initialize music controls.");
+                return;
+            }
+
+            // SVG for UNMUTED state
+            const speakerIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M13.5 4.06c0-1.336-1.636-2.007-2.577-1.285L5.498 7.5H3.75a2.25 2.25 0 00-2.25 2.25v4.5c0 1.24.969 2.25 2.16 2.25h1.748l5.425 4.72c.94.723 2.576.052 2.576-1.285V4.06zM18.5 8.25a.75.75 0 00-.75.75v4.5a.75.75 0 001.5 0V9a.75.75 0 00-.75-.75zM20.25 6.75a.75.75 0 00-.75.75v7.5a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75zM22 5.25a.75.75 0 00-.75.75v10.5a.75.75 0 001.5 0V6a.75.75 0 00-.75-.75z"/></svg>`;
+            
+            // SVG for MUTED state
+            const mutedIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M13.5 4.06c0-1.336-1.636-2.007-2.577-1.285L5.498 7.5H3.75a2.25 2.25 0 00-2.25 2.25v4.5c0 1.24.969 2.25 2.16 2.25h1.748l5.425 4.72c.94.723 2.576.052 2.576-1.285V4.06zM17.25 9a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5H18a.75.75 0 01-.75-.75zM17.25 14.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5H18a.75.75 0 01-.75-.75zM22.5 12a.75.75 0 00-.75-.75h-1.5a.75.75 0 000 1.5h1.5a.75.75 0 00.75-.75z"/></svg>`;
+
+
+            // Update the button icon based on the current mute state
+            function updateIcon() {
+                iconContainer.innerHTML = music.muted ? mutedIcon : speakerIcon;
+            }
+
+            // Toggle function
+            toggleButton.addEventListener('click', () => {
+                if (music.paused) {
+                    // If audio is paused, try to play it (user interaction allows this)
+                    music.play().then(() => {
+                        music.muted = false; // Unmute after successful play attempt
+                        updateIcon();
+                    }).catch(error => {
+                        console.error("Audio playback blocked:", error);
+                        // If blocked, keep it muted but try to unblock later
+                        music.muted = true;
+                        updateIcon();
+                    });
+                } else {
+                    // If audio is playing, toggle mute status
+                    music.muted = !music.muted;
+                    updateIcon();
+                }
+            });
+
+            // Set initial state (muted)
+            music.muted = true;
+            updateIcon(); 
+        }
+
+        
+        // Start the initialization and animation on window load
+        window.onload = function () {
+            // 1. Initialize Three.js background
+            try {
+                initThreeJS();
+                animate();
+            } catch (e) {
+                console.error("Three.js initialization failed:", e);
+                // Fallback: If Three.js fails, ensure the background is still dark
+                document.getElementById('bg-canvas').style.backgroundColor = '#030712';
+            }
+
+            // 2. Setup Audio Control
+            setupAudioControl();
+
+            // 3. Trigger the staggered fade-in animation for content after a short delay
+            setTimeout(() => {
+                document.getElementById('main-content').classList.add('loaded');
+            }, 50); 
+        };
+
+    </script>
+</body>
+</html>
